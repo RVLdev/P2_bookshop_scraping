@@ -10,8 +10,8 @@ soup = BeautifulSoup(website_requested.content, 'html.parser')
 
 categories_pagination = soup.find("div", class_="side_categories").find_all("li")
 
-"""List the links of all categories
-"""
+#Links of all categories
+
 categories_links_list = []
 
 for categ in categories_pagination:
@@ -22,126 +22,108 @@ for categ in categories_pagination:
 del categories_links_list[0]    
 
 
-# List the name of each category
-list1 = []
-list2 = []
-categories_names_list = []
-
-for li in categories_pagination:
-    a = li.find('a')
-    list1.append(a['href'][25:-13])
-    list2.append(a['href'][25:-14])
-    
-for i in list1[1:9]:    
-    categories_names_list.append(i)
-for j in list2[9:51]:
-    categories_names_list.append(j)
-    
-
-# create CSV file for each category
-csv_list = []
-for name in categories_names_list:
-    csv_file.append(name+".csv")
-
-for file in csv_list:
-    with open (file, 'w', newline='') as csv_file:
-        en_tete = ["product_page_url", "universal_product_code (upc)", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
-        writer = csv.DictWriter(csv_file, fieldnames=en_tete, delimiter=',')
-        
-        writer.writeheader()
-
-
-""" CATEGORIES PAGES
+""" starting from CATEGORIES' links
 """
-for categorie_link in categories_links_list:
-    categories_links_requested = requests.get(categorie_link)
+for category_link in categories_links_list:
+    categories_links_requested = requests.get(category_link)
     soup_categories_links=BeautifulSoup(categories_links_requested.content, 'html.parser')
 
-    # calcul nb pages 
+    # Category name
+    category_pagination = soup_categories_links.find('li', class_='active')
+    category_name = category_pagination.text
+    
+    # CSV creation
+    with open (category_name+".csv", 'w', newline='') as csv_file:
+                csv_header = ["product_page_url", "universal_product_code (upc)", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
+                writer = csv.DictWriter(csv_file, fieldnames=csv_header, delimiter=',')
+                writer.writeheader()
+                
+                
+    # calculate the number of pages (in a category) 
     pages_cat = soup_categories_links.find_all("strong")[1].text
 
     if (int(pages_cat))%20 ==0: 
         nbpages = (int(pages_cat))/20
     else : nbpages =((int(pages_cat))//20)+1
 
-    """Liste des URLS des PAGES des CATEGORIES
-    """
-    liste_urlpages = []
-    liste_urlpages.append(categorie_link) # ajoute la 1ère page de la catégorie
+    # Urls of CATEGORIES PAGES 
+    
+    urlpages_list = []
+    urlpages_list.append(category_link) # ajoute la 1ère page de la catégorie
 
     if nbpages > 1:
         for i in range(2,(nbpages+1)):
-            urlpage=categorie_link.replace("index", "page-"+str(i))
-            liste_urlpages.append(urlpage) #ajoute les pages >1 
+            urlpage=category_link.replace("index", "page-"+str(i))
+            urlpages_list.append(urlpage) #ajoute les pages >1 
     else: 
         pass
     
 
-    # liste URLS des LIVRES = OK (dernier livre vérifié)
-    liste_lienboukins = []
+    # Urls of BOOKS
+    books_links_list = []
 
-    for urlp in liste_urlpages:
-        pagecategorie = requests.get(urlp)
-        soup_pcat = BeautifulSoup(pagecategorie.content, 'html.parser')
+    for urlp in urlpages_list:
+        categories_pages_requested = requests.get(urlp)
+        soup_pcat = BeautifulSoup(categories_pages_requested.content, 'html.parser')
 
-        boukins = soup_pcat.find_all("h3")
+        books_pagination = soup_pcat.find_all("h3")
 
-        for boukin in boukins:
-            a = boukin.find('a')
-            lien = a['href']
-            lienboukin = lien.replace("../../../", 'https://books.toscrape.com/catalogue/')
-            liste_lienboukins.append(lienboukin)
+        for book in books_pagination:
+            a = book.find('a')
+            b_link = a['href']
+            book_link = b_link.replace("../../../", 'https://books.toscrape.com/catalogue/')
+            books_links_list.append(book_link)
 
 
-    """ BOOKS DATA
+    """ DATA from books
     """
 
-    for urll in liste_lienboukins:
-        livre = requests.get(urll)
-        soup_livr = BeautifulSoup(livre.content, 'html.parser')
+    for urll in books_links_list:
+        product = requests.get(urll)
+        soup_product = BeautifulSoup(product.content, 'html.parser')
 
         # Title
 
-        titre = soup_livr.find('h1')
-        letitre=titre.text
+        title_pagination = soup_product.find('h1')
+        title=title_pagination.text
 
 
         # UPC, Price excl. Price Incl. Availability 
 
-        valeurs = soup_livr.find_all("td")
+        values_pagination = soup_product.find_all("td")
         caracteristics = []
-        for valeur in valeurs:
-            caracteristics.append(valeur.string)
+        for value in values_pagination:
+            caracteristics.append(value.string)
             
         upc = caracteristics[0]
-        prix_ttc = caracteristics[3]
-        prix_ht = caracteristics[2]
-        nbre_dispo = caracteristics[5]
+        price_incl = caracteristics[3]
+        price_excl = caracteristics[2]
+        nbr_available = caracteristics[5]
 
 
         # Description 
 
-        description = soup_livr.find("p", class_="")
-        if description !=None:
-            description = description.text
+        description_pagination = soup_product.find("p", class_="")
+        if description_pagination !=None:
+            description = description_pagination.text
         else: 
-            pass
+            description = "No description"
         
         # Category
         
-        ktgories = soup_livr.find_all('li')
-        ktgorie=(ktgories[2].text)
+        product_category_pagination= soup_product.find_all('li')
+        product_category=(product_category_pagination[2].text)
          
         # Review rating 
         
-        stars = soup_livr.find("p", class_="star-rating")
+        stars = soup_product.find("p", class_="star-rating")
         rating = str(stars).split(" ")[2]
         star_rate=(rating[:-5])
         
         # link to cover page picture
         
-        cover_page = soup_livr.find_all("div", class_="item active")
-        for c_page in cover_page:
+        cover_page_pagination = soup_product.find_all("div", class_="item active")
+        for c_page in cover_page_pagination:
             pict = c_page.find('img')
             picture_link = pict['src']
             
@@ -149,8 +131,10 @@ for categorie_link in categories_links_list:
 
 
         # CSV fill-in
-        for file in csv_list: 
+       
         with open (file, 'a', newline='') as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=en_tete, delimiter=',')
-            writer.writerow({"product_page_url":urll, "universal_product_code (upc)":upc, "title":letitre, "price_including_tax":prix_ttc, "price_excluding_tax":prix_ht, "number_available":nbre_dispo, "product_description":description, "category":ktgorie, "review_rating":star_rate, "image_url":cover_page_link})
+            csv_header = ["product_page_url", "universal_product_code (upc)", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
+            writer = csv.DictWriter(csv_file, fieldnames=csv_header, delimiter=',')
+            writer.writeheader()
+            writer.writerow({"product_page_url":urll, "universal_product_code (upc)":upc, "title":title, "price_including_tax":price_incl, "price_excluding_tax":price_excl, "number_available":nbr_available, "product_description":description, "category":product_category, "review_rating":star_rate, "image_url":cover_page_link})
 
