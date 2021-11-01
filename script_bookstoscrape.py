@@ -32,12 +32,7 @@ for category_link in categories_links_list:
     category_pagination = soup_categories_links.find('li', class_='active')
     category_name = category_pagination.text
     
-    # CSV creation
-    with open (category_name+".csv", 'w', newline='') as csv_file:
-                csv_header = ["product_page_url", "universal_product_code (upc)", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
-                writer = csv.DictWriter(csv_file, fieldnames=csv_header, delimiter=',')
-                writer.writeheader()
-                
+   
                 
     # calculate the number of pages (in a category) 
     pages_cat = soup_categories_links.find_all("strong")[1].text
@@ -58,6 +53,12 @@ for category_link in categories_links_list:
     else: 
         pass
     
+    # CSV creation - per category
+    with open (category_name+".csv", 'w', newline='', encoding = "utf-8") as csv_file:
+                csv_header = ["product_page_url", "universal_product_code (upc)", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
+                writer = csv.DictWriter(csv_file, fieldnames=csv_header, delimiter=',')
+                writer.writeheader()
+                
 
     # Urls of BOOKS
     books_links_list = []
@@ -127,14 +128,21 @@ for category_link in categories_links_list:
             pict = c_page.find('img')
             picture_link = pict['src']
             
-            cover_page_link = urljoin('http://books.toscrape.com', picture_link)
+            cover_page_link = urljoin('https://books.toscrape.com', picture_link)
+
+            # Getting the cover page picture
+            picture_name = pict['alt']
+            picture_name = picture_name.replace(":", " ").replace("/", " ").replace('"' ,"'").replace("*", "_").replace("?", "")
+            print(picture_name)
+            image = open(picture_name+".jpg", "wb")
+            image_requested = requests.get(cover_page_link)
+            image.write(image_requested.content)
+            image.close()
 
 
         # CSV fill-in
        
-        with open (file, 'a', newline='') as csv_file:
-            csv_header = ["product_page_url", "universal_product_code (upc)", "title", "price_including_tax", "price_excluding_tax", "number_available", "product_description", "category", "review_rating", "image_url"]
+        with open (category_name+".csv", 'a', newline='', encoding = "utf-8") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=csv_header, delimiter=',')
-            writer.writeheader()
             writer.writerow({"product_page_url":urll, "universal_product_code (upc)":upc, "title":title, "price_including_tax":price_incl, "price_excluding_tax":price_excl, "number_available":nbr_available, "product_description":description, "category":product_category, "review_rating":star_rate, "image_url":cover_page_link})
 
