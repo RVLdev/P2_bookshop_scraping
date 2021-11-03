@@ -8,22 +8,21 @@ url = 'https://books.toscrape.com/index.html'
 website_requested = requests.get(url)
 soup = BeautifulSoup(website_requested.content, 'html.parser')
 
-categories_pagination = soup.find("div", class_="side_categories").find_all("li")
-
 #Links of all categories
+categories_pagination = soup.find("div", class_="side_categories").find_all("li")
+def get_categories_list(categories_pagination):
+    categories_links_list = []
+    for categ in categories_pagination:
+        a = categ.find('a')
+        link = a['href']
+        categories_links = urljoin('https://books.toscrape.com/', link)
+        categories_links_list.append(categories_links)
+    del categories_links_list[0]    
+    return categories_links_list
+categories_links_list=get_categories_list(categories_pagination)
 
-categories_links_list = []
+# CATEGORIES' links
 
-for categ in categories_pagination:
-    a = categ.find('a')
-    link = a['href']
-    categories_links = urljoin('https://books.toscrape.com/', link)
-    categories_links_list.append(categories_links)
-del categories_links_list[0]    
-
-
-""" starting from CATEGORIES' links
-"""
 for category_link in categories_links_list:
     categories_links_requested = requests.get(category_link)
     soup_categories_links=BeautifulSoup(categories_links_requested.content, 'html.parser')
@@ -31,18 +30,16 @@ for category_link in categories_links_list:
     # Category name
     category_pagination = soup_categories_links.find('li', class_='active')
     category_name = category_pagination.text
-    
-   
-                
+
     # calculate the number of pages (in a category) 
     pages_cat = soup_categories_links.find_all("strong")[1].text
-
-    if (int(pages_cat))%20 ==0: 
-        nbpages = (int(pages_cat))/20
-    else : nbpages =((int(pages_cat))//20)+1
+    def get_nb_pages(pages_cat):
+        if (int(pages_cat))%20 ==0: 
+            return(int(pages_cat))/20
+        return((int(pages_cat))//20)+1
+    nbpages = get_nb_pages(pages_cat)
 
     # Urls of CATEGORIES PAGES 
-    
     urlpages_list = []
     urlpages_list.append(category_link) # ajoute la 1ère page de la catégorie
 
@@ -76,21 +73,18 @@ for category_link in categories_links_list:
             books_links_list.append(book_link)
 
 
-    """ DATA from books
-    """
+    # DATA from books
 
     for urll in books_links_list:
         product = requests.get(urll)
         soup_product = BeautifulSoup(product.content, 'html.parser')
 
         # Title
-
         title_pagination = soup_product.find('h1')
         title=title_pagination.text
 
 
         # UPC, Price excl. Price Incl. Availability 
-
         values_pagination = soup_product.find_all("td")
         caracteristics = []
         for value in values_pagination:
@@ -103,26 +97,25 @@ for category_link in categories_links_list:
 
 
         # Description 
-
         description_pagination = soup_product.find("p", class_="")
-        if description_pagination !=None:
-            description = description_pagination.text
-        else: 
-            description = "No description"
+        def get_description(description_pagination):
+            if description_pagination !=None:
+                return(description_pagination.text)
+            return("No description")
+        description = get_description(description_pagination)
         
+
         # Category
-        
         product_category_pagination= soup_product.find_all('li')
         product_category=(product_category_pagination[2].text)
          
+         
         # Review rating 
-        
         stars = soup_product.find("p", class_="star-rating")
-        rating = str(stars).split(" ")[2]
-        star_rate=(rating[:-5])
-        
+        star_rate = (str(stars).split(" ")[2])[:-5]
+       
+
         # link to cover page picture
-        
         cover_page_pagination = soup_product.find_all("div", class_="item active")
         for c_page in cover_page_pagination:
             pict = c_page.find('img')
@@ -130,19 +123,19 @@ for category_link in categories_links_list:
             
             cover_page_link = urljoin('https://books.toscrape.com', picture_link)
 
-            # Getting the cover page picture
-            picture_name = pict['alt']
-            picture_name = picture_name.replace(":", " ").replace("/", " ").replace('"' ,"'").replace("*", "_").replace("?", "")
-            print(picture_name)
-            image = open(picture_name+".jpg", "wb")
-            image_requested = requests.get(cover_page_link)
-            image.write(image_requested.content)
-            image.close()
+        
+        # Naming and downloading the cover page picture
+        picture_name = urll.replace("https://books.toscrape.com/catalogue/", "").replace("/index.html", "").replace(":", " ").replace("/", " ").replace('"' ,"'").replace("*", "_").replace("?", "")
+        image_requested = requests.get(cover_page_link)
+
+        image = open(picture_name+".jpg", "wb")
+        image.write(image_requested.content)
+        image.close()
 
 
         # CSV fill-in
-       
         with open (category_name+".csv", 'a', newline='', encoding = "utf-8") as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=csv_header, delimiter=',')
             writer.writerow({"product_page_url":urll, "universal_product_code (upc)":upc, "title":title, "price_including_tax":price_incl, "price_excluding_tax":price_excl, "number_available":nbr_available, "product_description":description, "category":product_category, "review_rating":star_rate, "image_url":cover_page_link})
 
+print("Your request has come to its end")
