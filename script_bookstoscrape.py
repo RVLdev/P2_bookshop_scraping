@@ -3,7 +3,7 @@ from requests.compat import urljoin
 from bs4 import BeautifulSoup
 import csv
 
-url = 'https://books.toscrape.com/index.html'
+URL = 'https://books.toscrape.com/index.html'
 
 website_requested = requests.get(url)
 soup = BeautifulSoup(website_requested.content, 'html.parser')
@@ -21,7 +21,7 @@ def get_categories_list(categories_pagination):
     return categories_links_list
 categories_links_list=get_categories_list(categories_pagination)
 
-# CATEGORIES' links
+# Categories : name, number of pages, url
 
 for category_link in categories_links_list:
     categories_links_requested = requests.get(category_link)
@@ -73,7 +73,7 @@ for category_link in categories_links_list:
             books_links_list.append(book_link)
 
 
-    # DATA from books
+    # Product page : data and picture
 
     for urll in books_links_list:
         product = requests.get(urll)
