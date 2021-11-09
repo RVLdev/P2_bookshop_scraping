@@ -1,4 +1,3 @@
-#requirements
 import requests
 from requests.compat import urljoin
 from bs4 import BeautifulSoup
@@ -13,7 +12,7 @@ soup = BeautifulSoup(unecategorie.content, 'html.parser')
 
 
 """ NOMBRE de PAGES dans la CATEGORIE 
-(sachant qu'il y a 20 livres par page)
+(20 livres par page)
 """
 pages_cat = soup.find_all("strong")[1].text
 
@@ -33,15 +32,12 @@ if nbpages > 1:
 	for i in range(2,(nbpages+1)):
 	    urlpage=url.replace("index", "page-"+str(i))
 	    liste_urlpages.append(urlpage) #ajoute les pages >1 
-else: print(liste_urlpages) # affichage pour ctrl si 1 seule page
+else: 
+	pass
+
 
 """
 liste URLS des LIVRES (de chaque page) de la CATEGORIE
-
-25/10 corrections:
-	identation "print(liste_lienboukins)"
-	url (plus haut) et urljoin : http => https
-	urljoin --> lien. replace (résoud erreur 404)
 
 """
 
@@ -79,7 +75,6 @@ for urll in liste_lienboukins:
 
 
 	""" UPC,  PRICE EXCL, PRICE INCL, AVAILABILITY 
-	25/10 : del inutile, utiliser directemt index
 	"""
 
 	valeurs = soup_livr.find_all("td")
@@ -108,7 +103,7 @@ for urll in liste_lienboukins:
 	stars = soup_livr.find("p", class_="star-rating")
 	rating = str(stars).split(" ")[2]
 	star_rate=(rating[:-5])
-	print(star_rate) 
+	 
 	""" 
 	lien IMAGE de couverture
 	"""
@@ -119,11 +114,9 @@ for urll in liste_lienboukins:
 		
 		lienimage = urljoin('http://books.toscrape.com', lien)
 
-	# création du FICHIER CSV  (25/10 corr alignement + nom csv)
-	""" adaptation boucle
-	"""
+	# création du FICHIER CSV
 	with open ('data_catlivres.csv', 'a', newline='') as csv_file:
 		writer = csv.DictWriter(csv_file, fieldnames=en_tete, delimiter=',')
-		writer.writerow({"product_page_url":url, "universal_product_code (upc)":upc, "title":letitre, "price_including_tax":prix_ttc, "price_excluding_tax":prix_ht, "number_available":nbre_dispo, "product_description":description, "category":ktgorie, "review_rating":star_rate, "image_url":lienimage})
+		writer.writerow({"product_page_url":urll, "universal_product_code (upc)":upc, "title":letitre, "price_including_tax":prix_ttc, "price_excluding_tax":prix_ht, "number_available":nbre_dispo, "product_description":description, "category":ktgorie, "review_rating":star_rate, "image_url":lienimage})
 
 
