@@ -85,6 +85,62 @@ def data_dict():
 
 def get_book_data_and_save(books_links_list, category_name,
                            csv_header=CSV_HEADER):
+
+    def get_title(title_pagination):
+        return(title_pagination.text)
+
+    def get_upc(values_pagination):
+        caracteristics = []
+        for value in values_pagination:
+            (caracteristics.append(value.string))
+        return(caracteristics[0])
+
+    def get_price_inc_tax(values_pagination):
+        caracteristics = []
+        for value in values_pagination:
+            (caracteristics.append(value.string))
+        return(caracteristics[3])
+
+    def get_price_excl_tax(values_pagination):
+        caracteristics = []
+        for value in values_pagination:
+            (caracteristics.append(value.string))
+        return(caracteristics[2])
+
+    def get_availability(values_pagination):
+        caracteristics = []
+        for value in values_pagination:
+            (caracteristics.append(value.string))
+        return(caracteristics[5])
+
+    def get_descripton(description_pagination):
+        if description_pagination is not None:
+            return(description_pagination.text)
+        return("No description")
+
+    def get_category(product_category_pagination):
+        return((product_category_pagination[2].text))
+
+    def get_rating(stars):
+        return((str(stars).split(" ")[2])[:-5])
+
+    def get_cover_page(cover_page_pagination):
+        pict = cover_page_pagination.find('img')
+        picture_link = pict['src']
+        return(urljoin('https://books.toscrape.com', picture_link))
+
+    def get_picture_name(urll):
+        return(urll.replace("https://books.toscrape.com/catalogue/", ""
+                            ).replace("/index.html", "").replace(
+                            ":", " ").replace("/", " ").replace(
+                            '"', "'").replace("*", "_").replace(
+                            "?", ""))
+
+    def downloading_cover_page_picture(picture_name):
+        image = open(picture_name+".jpg", "wb")
+        image.write(image_requested.content)
+        image.close()
+
     for urll in books_links_list:
         data = data_dict()
         data['product_page_url'] = urll
@@ -93,50 +149,39 @@ def get_book_data_and_save(books_links_list, category_name,
 
         # Title
         title_pagination = soup_product.find('h1')
-        data["title"] = title_pagination.text
+        data["title"] = get_title(title_pagination)
 
         # UPC, Price excl. Price Incl. Availability
         values_pagination = soup_product.find_all("td")
-        caracteristics = []
-        for value in values_pagination:
-            caracteristics.append(value.string)
 
-        data["universal_product_code (upc)"] = caracteristics[0]
-        data["price_including_tax"] = caracteristics[3]
-        data["price_excluding_tax"] = caracteristics[2]
-        data["number_available"] = caracteristics[5]
+        data["universal_product_code (upc)"] = get_upc(values_pagination)
+
+        data["price_including_tax"] = get_price_inc_tax(values_pagination)
+
+        data["price_excluding_tax"] = get_price_excl_tax(values_pagination)
+
+        data["number_available"] = get_availability(values_pagination)
 
         # Description
         description_pagination = soup_product.find("p", class_="")
-        if description_pagination is not None:
-            description = (description_pagination.text)
-        description = ("No description")
-        data["product_description"] = description
+        data["product_description"] = get_descripton(description_pagination)
 
         # Category
         product_category_pagination = soup_product.find_all('li')
-        data["category"] = (product_category_pagination[2].text)
+        data["category"] = get_category(product_category_pagination)
 
         # Review rating
         stars = soup_product.find("p", class_="star-rating")
-        data["review_rating"] = (str(stars).split(" ")[2])[:-5]
+        data["review_rating"] = get_rating(stars)
 
         # link to cover page picture
         cover_page_pagination = soup_product.find("div", class_="item active")
-        pict = cover_page_pagination.find('img')
-        picture_link = pict['src']
-        data["image_url"] = urljoin('https://books.toscrape.com', picture_link)
+        data["image_url"] = get_cover_page(cover_page_pagination)
 
         # Naming and downloading the cover page picture
-        picture_name = urll.replace("https://books.toscrape.com/catalogue/", ""
-                                    ).replace("/index.html", "").replace(
-                                    ":", " ").replace("/", " ").replace(
-                                    '"', "'").replace("*", "_").replace(
-                                    "?", "")
+        picture_name = get_picture_name(urll)
         image_requested = requests.get(data["image_url"])
-        image = open(picture_name+".jpg", "wb")
-        image.write(image_requested.content)
-        image.close()
+        downloading_cover_page_picture(picture_name)
 
         # CSV fill-in
         fill_in_csv_file(category_name, data, csv_header=CSV_HEADER)
@@ -155,7 +200,6 @@ def main(soup):
     categories_links_list = get_categories_list(soup)
 
     # Categories : name, number of pages, url
-
     for category_link in categories_links_list:
         categories_links_requested = requests.get(category_link)
         soup_categories_links = BeautifulSoup(categories_links_requested
