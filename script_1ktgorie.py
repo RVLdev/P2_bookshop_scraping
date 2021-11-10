@@ -14,12 +14,12 @@ soup = BeautifulSoup(unecategorie.content, 'html.parser')
 """ NOMBRE de PAGES dans la CATEGORIE 
 (20 livres par page)
 """
-pages_cat = soup.find_all("strong")[1].text
+books_qty = soup.find_all("strong")[1].text
 
 
-if (int(pages_cat))%20 ==0: 
-    nbpages = (int(pages_cat))/20
-else : nbpages =((int(pages_cat))//20)+1
+if (int(books_qty))%20 ==0: 
+    nbpages = (int(books_qty))/20
+else : nbpages =((int(books_qty))//20)+1
  
 
 """Liste des URLS des PAGES de la CATEGORIE "childrens" 
