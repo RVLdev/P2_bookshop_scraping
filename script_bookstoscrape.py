@@ -28,10 +28,10 @@ def get_category_name(category_pagination):
     return(category_pagination.text)
 
 
-def get_nb_pages(pages_cat):
-    if (int(pages_cat)) % 20 == 0:
-        return(int(pages_cat))/20
-    return((int(pages_cat))//20)+1
+def get_nb_pages(books_qty):
+    if (int(books_qty)) % 20 == 0:
+        return(int(books_qty))/20
+    return((int(books_qty))//20)+1
 
 
 def get_url_categories_pages_list(category_link, nbpages):
@@ -210,8 +210,8 @@ def main(soup):
         category_name = get_category_name(category_pagination)
 
         # calculate the number of pages (in a category)
-        pages_cat = soup_categories_links.find_all("strong")[1].text
-        nbpages = get_nb_pages(pages_cat)
+        books_qty = soup_categories_links.find_all("strong")[1].text
+        nbpages = get_nb_pages(books_qty)
 
         # Urls of Categories pages
         urlpages_list = get_url_categories_pages_list(category_link, nbpages)
